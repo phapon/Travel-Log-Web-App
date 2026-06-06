@@ -1,1 +1,744 @@
 
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Log - ระบบบันทึกการท่องเที่ยว</title>
+    <!-- Tailwind CSS สำหรับตกแต่ง -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome สำหรับไอคอน -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts (Prompt) -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#059669', // Emerald 600
+                        secondary: '#10b981', // Emerald 500
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #f3f4f6; }
+        /* ซ่อน Scrollbar แต่ยังเลื่อนได้ */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #059669;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="text-gray-800 antialiased min-h-screen flex flex-col items-center py-10 px-4">
+
+    <!-- Header Section -->
+    <div class="w-full max-w-3xl flex justify-between items-end mb-6">
+        <div>
+            <h1 class="text-4xl font-bold text-primary flex items-center gap-3">
+                <i class="fa-solid fa-plane-departure"></i> Travel Log
+            </h1>
+            <p class="text-gray-500 mt-2">บันทึกความทรงจำและข้อมูลทริปการเดินทางของคุณ</p>
+        </div>
+        <button onclick="toggleModal('devModal')" class="text-sm bg-gray-800 hover:bg-gray-900 text-white py-2 px-4 rounded-lg shadow transition-colors flex items-center gap-2">
+            <i class="fa-solid fa-code"></i> ตรวจสอบโค้ด Backend
+        </button>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="w-full max-w-3xl flex gap-4 mb-6">
+        <button onclick="switchTab('form')" id="tab-form" class="bg-primary text-white px-6 py-2 rounded-lg font-semibold shadow transition-all">
+            <i class="fa-solid fa-pen-to-square mr-2"></i> บันทึกทริป
+        </button>
+        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="bg-white text-gray-600 px-6 py-2 rounded-lg font-semibold shadow hover:bg-gray-50 transition-all">
+            <i class="fa-solid fa-chart-pie mr-2"></i> แดชบอร์ด
+        </button>
+    </div>
+
+    <!-- Main Form Container -->
+    <div id="view-form" class="w-full max-w-3xl bg-white rounded-2xl shadow-xl overflow-hidden transition-all">
+        <div class="bg-emerald-50 border-b border-emerald-100 p-6">
+            <h2 class="text-xl font-semibold text-emerald-800">กรอกข้อมูลทริปใหม่</h2>
+        </div>
+        
+        <form id="travelForm" class="p-6 md:p-8 space-y-6">
+            <!-- 1. จุดหมาย -->
+            <div>
+                <label for="destination" class="block text-sm font-medium text-gray-700 mb-1">จุดหมายปลายทาง <span class="text-red-500">*</span></label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-location-dot text-gray-400"></i>
+                    </div>
+                    <input type="text" id="destination" name="destination" required placeholder="เช่น น้ำตกสามหลั่น, ภูกระดึง" 
+                        class="pl-10 w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow">
+                </div>
+            </div>
+
+            <!-- 2. ประเภททริป -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">ประเภททริป (เลือกได้มากกว่า 1)</label>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-emerald-50 transition-colors has-[:checked]:bg-emerald-100 has-[:checked]:border-primary">
+                        <input type="checkbox" name="tripType" value="แคมป์ปิ้ง" class="w-4 h-4 text-primary rounded focus:ring-primary accent-primary">
+                        <span class="ml-2 text-sm">🏕️ แคมป์ปิ้ง</span>
+                    </label>
+                    <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-emerald-50 transition-colors has-[:checked]:bg-emerald-100 has-[:checked]:border-primary">
+                        <input type="checkbox" name="tripType" value="เดินป่า" class="w-4 h-4 text-primary rounded focus:ring-primary accent-primary">
+                        <span class="ml-2 text-sm">🥾 เดินป่า</span>
+                    </label>
+                    <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-emerald-50 transition-colors has-[:checked]:bg-emerald-100 has-[:checked]:border-primary">
+                        <input type="checkbox" name="tripType" value="เล่นน้ำ" class="w-4 h-4 text-primary rounded focus:ring-primary accent-primary">
+                        <span class="ml-2 text-sm">🏊 เล่นน้ำ</span>
+                    </label>
+                    <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-emerald-50 transition-colors has-[:checked]:bg-emerald-100 has-[:checked]:border-primary">
+                        <input type="checkbox" name="tripType" value="พักผ่อน" class="w-4 h-4 text-primary rounded focus:ring-primary accent-primary">
+                        <span class="ml-2 text-sm">☕ พักผ่อนชิลๆ</span>
+                    </label>
+                    <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-emerald-50 transition-colors has-[:checked]:bg-emerald-100 has-[:checked]:border-primary">
+                        <input type="checkbox" name="tripType" value="ภูเขา" class="w-4 h-4 text-primary rounded focus:ring-primary accent-primary">
+                        <span class="ml-2 text-sm">⛰️ ขึ้นเขา</span>
+                    </label>
+                    <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-emerald-50 transition-colors has-[:checked]:bg-emerald-100 has-[:checked]:border-primary">
+                        <input type="checkbox" name="tripType" value="ทะเล" class="w-4 h-4 text-primary rounded focus:ring-primary accent-primary">
+                        <span class="ml-2 text-sm">🌊 ทะเล</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 3-5. วันที่ และ ระยะเวลา -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="startDate" class="block text-sm font-medium text-gray-700 mb-1">วันเริ่มเดินทาง <span class="text-red-500">*</span></label>
+                    <input type="date" id="startDate" name="startDate" required 
+                        class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                </div>
+                <div>
+                    <label for="endDate" class="block text-sm font-medium text-gray-700 mb-1">วันกลับเดินทาง <span class="text-red-500">*</span></label>
+                    <input type="date" id="endDate" name="endDate" required 
+                        class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                </div>
+                <div>
+                    <label for="duration" class="block text-sm font-medium text-gray-700 mb-1">ระยะเวลา (วัน)</label>
+                    <div class="relative">
+                        <input type="number" id="duration" name="duration" readonly placeholder="คำนวณอัตโนมัติ"
+                            class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-gray-500 cursor-not-allowed">
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <span class="text-gray-400 text-sm">วัน</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6-7. จำนวนคน และ งบประมาณ -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="travelers" class="block text-sm font-medium text-gray-700 mb-1">จำนวนผู้เดินทาง (คน) <span class="text-red-500">*</span></label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-user-group text-gray-400"></i>
+                        </div>
+                        <input type="number" id="travelers" name="travelers" min="1" required placeholder="เช่น 2"
+                            class="pl-10 w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+                </div>
+                <div>
+                    <label for="budget" class="block text-sm font-medium text-gray-700 mb-1">งบประมาณรวม (บาท)</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-baht-sign text-gray-400"></i>
+                        </div>
+                        <input type="number" id="budget" name="budget" min="0" placeholder="เช่น 5000"
+                            class="pl-10 w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8. รูปภาพ -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">อัปโหลดรูปภาพ (บันทึกลง Google Drive)</label>
+                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl hover:border-primary transition-colors bg-gray-50 relative">
+                    <div class="space-y-1 text-center">
+                        <i class="fa-regular fa-images text-4xl text-gray-400 mb-3"></i>
+                        <div class="flex text-sm text-gray-600 justify-center">
+                            <label for="images" class="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-emerald-500 focus-within:outline-none px-2 py-1 shadow-sm border">
+                                <span>เลือกรูปภาพ</span>
+                                <input id="images" name="images" type="file" class="sr-only" multiple accept="image/*">
+                            </label>
+                            <p class="pl-2 py-1">หรือลากไฟล์มาวางที่นี่</p>
+                        </div>
+                        <p class="text-xs text-gray-500">PNG, JPG, GIF อัปโหลดได้หลายไฟล์</p>
+                    </div>
+                </div>
+                <!-- Image Preview Area -->
+                <div id="imagePreview" class="flex flex-wrap gap-3 mt-4 empty:hidden"></div>
+            </div>
+
+            <!-- 9. หมายเหตุ -->
+            <div>
+                <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">หมายเหตุ / ความประทับใจ</label>
+                <textarea id="notes" name="notes" rows="3" placeholder="เขียนบันทึกความทรงจำ รีวิวที่พัก หรือร้านอาหาร..."
+                    class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"></textarea>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="pt-4 border-t border-gray-100">
+                <button type="submit" id="submitBtn" class="w-full bg-primary hover:bg-emerald-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 text-lg">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> บันทึกข้อมูลทริป
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Dashboard Container -->
+    <div id="view-dashboard" class="hidden w-full max-w-4xl space-y-6">
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-emerald-500 flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">จำนวนทริปทั้งหมด</p>
+                    <h3 id="dash-total-trips" class="text-3xl font-bold text-gray-800 mt-1">-</h3>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-xl">
+                    <i class="fa-solid fa-suitcase-rolling"></i>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-blue-500 flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">งบประมาณรวม</p>
+                    <h3 id="dash-total-budget" class="text-3xl font-bold text-gray-800 mt-1">-</h3>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xl">
+                    <i class="fa-solid fa-baht-sign"></i>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-orange-500 flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">เดินทางรวม (วัน)</p>
+                    <h3 id="dash-total-days" class="text-3xl font-bold text-gray-800 mt-1">-</h3>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 text-xl">
+                    <i class="fa-solid fa-calendar-check"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Trips Table -->
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div class="bg-gray-50 border-b border-gray-200 p-6 flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-800">ประวัติการเดินทางล่าสุด</h2>
+                <button onclick="loadDashboardData()" class="text-sm text-primary hover:text-emerald-700 flex items-center gap-1 transition-colors">
+                    <i class="fa-solid fa-rotate-right"></i> รีเฟรชข้อมูล
+                </button>
+            </div>
+            <div class="p-6 overflow-x-auto">
+                <div id="dashboard-loader" class="flex flex-col items-center justify-center py-10 text-gray-500">
+                    <span class="loader border-t-primary w-8 h-8 mb-4"></span>
+                    <p>กำลังโหลดข้อมูล...</p>
+                </div>
+                <table id="dashboard-table" class="w-full hidden text-left border-collapse min-w-[600px]">
+                    <thead>
+                        <tr class="text-sm text-gray-500 border-b-2 border-gray-200">
+                            <th class="pb-3 font-medium">จุดหมาย</th>
+                            <th class="pb-3 font-medium">วันที่เดินทาง</th>
+                            <th class="pb-3 font-medium">ประเภท</th>
+                            <th class="pb-3 font-medium text-center">จำนวนคน</th>
+                            <th class="pb-3 font-medium text-right">งบประมาณ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dashboard-tbody" class="text-sm text-gray-700">
+                        <!-- Data rows will be injected here -->
+                    </tbody>
+                </table>
+                <div id="dashboard-empty" class="hidden text-center py-10 text-gray-500">
+                    <i class="fa-solid fa-folder-open text-4xl mb-3 text-gray-300"></i>
+                    <p>ยังไม่มีข้อมูลทริป หรือกำลังตั้งค่าระบบ</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Message (Hidden by default) -->
+    <div id="alertMsg" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 bg-white border-l-4 border-emerald-500 p-4 rounded shadow-xl flex items-center gap-3 z-50">
+        <div id="alertIconBg" class="rounded-full bg-emerald-100 p-2">
+            <i id="alertIcon" class="fa-solid fa-check text-emerald-600"></i>
+        </div>
+        <div>
+            <h4 id="alertTitle" class="font-bold text-gray-800">บันทึกสำเร็จ!</h4>
+            <p id="alertDesc" class="text-sm text-gray-600">ข้อมูลและรูปภาพถูกส่งไปยังระบบเรียบร้อยแล้ว</p>
+        </div>
+    </div>
+
+    <!-- Developer Modal (How to connect to GAS) -->
+    <div id="devModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col transform scale-95 transition-transform" id="devModalContent">
+            <div class="flex justify-between items-center p-5 border-b bg-gray-50">
+                <h3 class="text-xl font-bold text-gray-800"><i class="fa-brands fa-google text-blue-500"></i> โค้ด Apps Script ของคุณ</h3>
+                <button onclick="toggleModal('devModal')" class="text-gray-400 hover:text-gray-700 text-2xl leading-none">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto">
+                <div class="space-y-6 text-sm text-gray-700">
+                    <p>Web App นี้เชื่อมต่อกับ URL ของคุณแล้ว! หากคุณยังไม่ได้ตั้งค่าฝั่ง Google Sheets สามารถนำโค้ดด้านล่างนี้ไปใส่ใน <strong>Extensions > Apps Script</strong> ได้เลย (ผมได้ใส่ Folder ID ของคุณให้แล้ว):</p>
+
+                    <div>
+                        <div class="relative">
+                            <button onclick="copyCode()" class="absolute top-2 right-2 bg-gray-700 hover:bg-gray-800 text-white text-xs px-3 py-1 rounded shadow"><i class="fa-regular fa-copy"></i> Copy</button>
+                            <pre class="bg-gray-800 text-gray-100 p-4 rounded-xl overflow-x-auto text-xs leading-relaxed" id="gasCode">
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    
+    // Folder ID ของคุณที่ดึงมาจากลิงก์
+    var folderId = '1Z6cwnF4iYRs2QX6RGI_Ea6qPhSyBV7w4'; 
+    var folder = DriveApp.getFolderById(folderId);
+    
+    var imageUrls = [];
+    
+    // จัดการแปลง Base64 เป็นไฟล์รูปภาพและเซฟลง Drive
+    if (data.images && data.images.length > 0) {
+      for (var i = 0; i < data.images.length; i++) {
+        var img = data.images[i];
+        var dataPattern = img.base64.match(/data:(.*?);base64,(.*)/);
+        if(dataPattern){
+           var mimeType = dataPattern[1];
+           var base64Data = dataPattern[2];
+           var blob = Utilities.newBlob(Utilities.base64Decode(base64Data), mimeType, img.filename);
+           var file = folder.createFile(blob);
+           // ตั้งค่าให้รูปภาพสามารถดูได้ทุกคนที่มีลิงก์ (อุปกรณ์เสริม)
+           file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+           imageUrls.push(file.getUrl());
+        }
+      }
+    }
+    
+    // บันทึกข้อมูลลงแถวใหม่ใน Google Sheets
+    sheet.appendRow([
+      new Date(), // Timestamp
+      data.destination,
+      data.tripTypes.join(", "),
+      data.startDate,
+      data.endDate,
+      data.duration,
+      data.travelers,
+      data.budget,
+      imageUrls.join(", \n"), // คั่น URL รูปภาพด้วยลูกน้ำและขึ้นบรรทัดใหม่
+      data.notes
+    ]);
+    
+    // ส่งสถานะกลับไปบอก Web App ว่าสำเร็จ
+    return ContentService.createTextOutput(JSON.stringify({
+      "status": "success", 
+      "message": "Data and " + imageUrls.length + " images saved."
+    })).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (error) {
+    // กรณี Error
+    return ContentService.createTextOutput(JSON.stringify({
+      "status": "error", 
+      "message": error.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// -------------------------------------------------------------
+// เพิ่มฟังก์ชัน doGet เพื่อดึงข้อมูลมาแสดงในหน้า Dashboard
+// -------------------------------------------------------------
+function doGet(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var data = sheet.getDataRange().getValues();
+    var result = [];
+    
+    // เริ่มที่ 1 (ข้ามแถว Header ถ้าแถวแรกไม่ใช่ข้อมูลวันที่) 
+    // หากเพิ่งสร้างชีตใหม่แล้วไม่มีข้อมูลให้ข้ามไปเลย
+    var startIndex = (data.length > 0 && isNaN(new Date(data[0][0]).getTime())) ? 1 : 0;
+
+    for (var i = startIndex; i < data.length; i++) {
+      var row = data[i];
+      if (row[1] == "") continue; // ข้ามแถวว่าง
+      
+      result.push({
+        timestamp: row[0],
+        destination: row[1],
+        tripTypes: row[2],
+        startDate: row[3],
+        endDate: row[4],
+        duration: row[5],
+        travelers: row[6],
+        budget: row[7],
+        images: row[8],
+        notes: row[9]
+      });
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({
+      "status": "success",
+      "data": result
+    })).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      "status": "error",
+      "message": error.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-5 border-t bg-gray-50 text-right">
+                <button onclick="toggleModal('devModal')" class="bg-gray-800 text-white px-6 py-2 rounded-lg hover:bg-gray-900 transition-colors">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. การตั้งค่า Backend URL (ใส่ URL ของคุณเรียบร้อยแล้ว) ---
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbwhyybGIe0-qtSSHxbSBopkwFrbpD24mCWt_1ocvOW_db4vIw6ckX92uLnU2iXhb-4a/exec';
+
+        // --- 2. ฟังก์ชันคำนวณระยะเวลาเดินทางอัตโนมัติ ---
+        const startInput = document.getElementById('startDate');
+        const endInput = document.getElementById('endDate');
+        const durationInput = document.getElementById('duration');
+
+        function calculateDuration() {
+            if (startInput.value && endInput.value) {
+                const start = new Date(startInput.value);
+                const end = new Date(endInput.value);
+                
+                // ตรวจสอบว่าวันกลับ ต้องไม่ก่อนวันเริ่ม
+                if (end < start) {
+                    endInput.value = startInput.value;
+                } else {
+                    const diffTime = Math.abs(end - start);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    // บวก 1 เพื่อรวมวันแรกด้วย (เช่น ไป 1 กลับ 2 = 2 วัน)
+                    durationInput.value = diffDays + 1;
+                }
+            }
+        }
+        startInput.addEventListener('change', calculateDuration);
+        endInput.addEventListener('change', calculateDuration);
+
+        // --- 3. ระบบแสดงตัวอย่างรูปภาพก่อนอัปโหลด ---
+        const imageInput = document.getElementById('images');
+        const imagePreview = document.getElementById('imagePreview');
+        let selectedFiles = []; // เก็บไฟล์ที่ผู้ใช้เลือก
+
+        imageInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            
+            files.forEach(file => {
+                // เก็บไฟล์ลง Array เพื่อรอส่ง
+                selectedFiles.push(file);
+
+                // สร้างรูปตัวอย่าง
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = 'relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 shadow-sm group';
+                    div.innerHTML = `
+                        <img src="${e.target.result}" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer text-white" onclick="removeImage(this, '${file.name}')">
+                            <i class="fa-solid fa-trash"></i>
+                        </div>
+                    `;
+                    imagePreview.appendChild(div);
+                }
+                reader.readAsDataURL(file);
+            });
+            // เคลียร์ input เผื่อเลือกไฟล์เดิมซ้ำ
+            imageInput.value = '';
+        });
+
+        // ลบรูปภาพออกจากตัวเลือก
+        function removeImage(btnElement, fileName) {
+            // ลบ UI
+            btnElement.parentElement.remove();
+            // ลบจาก Array
+            selectedFiles = selectedFiles.filter(f => f.name !== fileName);
+        }
+
+        // แปลงไฟล์เป็น Base64 สำหรับส่งไป GAS
+        const getBase64 = (file) => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve({
+                filename: file.name,
+                base64: reader.result // ข้อมูลรูปภาพที่แปลงเป็นข้อความ
+            });
+            reader.onerror = error => reject(error);
+        });
+
+        // --- 4. จัดการตอนกดปุ่มส่งข้อมูล ---
+        const form = document.getElementById('travelForm');
+        const submitBtn = document.getElementById('submitBtn');
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // เปลี่ยนหน้าตาปุ่มเป็นกำลังโหลด
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<span class="loader"></span> กำลังบันทึกข้อมูลและอัปโหลดรูป...';
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+
+            try {
+                // รวบรวมข้อมูล Checkbox (ประเภททริป)
+                const tripTypes = [];
+                document.querySelectorAll('input[name="tripType"]:checked').forEach(cb => {
+                    tripTypes.push(cb.value);
+                });
+
+                // รวบรวมรูปภาพและแปลงเป็น Base64
+                const imagesBase64 = [];
+                for (let file of selectedFiles) {
+                    const b64 = await getBase64(file);
+                    imagesBase64.push(b64);
+                }
+
+                // สร้าง Object ข้อมูลทั้งหมดที่จะส่งไป Backend
+                const payload = {
+                    destination: document.getElementById('destination').value,
+                    tripTypes: tripTypes,
+                    startDate: document.getElementById('startDate').value,
+                    endDate: document.getElementById('endDate').value,
+                    duration: document.getElementById('duration').value,
+                    travelers: document.getElementById('travelers').value,
+                    budget: document.getElementById('budget').value,
+                    notes: document.getElementById('notes').value,
+                    images: imagesBase64
+                };
+
+                // ทำการส่งข้อมูลไปยัง Google Apps Script
+                await fetch(GAS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // สำคัญ: เพื่อไม่ให้บราวเซอร์บล็อกการส่งข้อมูลข้ามโดเมน
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8', // เปลี่ยนเป็น text/plain เพื่อป้องกันบราวเซอร์บางชนิดตัดข้อมูลบอดี้ทิ้งเมื่อใช้ร่วมกับ no-cors
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                // แสดงข้อความสำเร็จ
+                showNotification('บันทึกสำเร็จ!', 'ข้อมูลและรูปภาพถูกส่งไปยังระบบเรียบร้อยแล้ว');
+                
+                // ล้างฟอร์ม
+                form.reset();
+                imagePreview.innerHTML = '';
+                selectedFiles = [];
+
+            } catch (error) {
+                showNotification('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error.message, true);
+            } finally {
+                // คืนค่าปุ่มกลับมาเหมือนเดิม
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+            }
+        });
+
+        // --- 5. UI Helpers และระบบแจ้งเตือนแบบ Pop-up (แทนที่ Alert) ---
+        function showNotification(title, message, isError = false) {
+            const alertBox = document.getElementById('alertMsg');
+            const iconBg = document.getElementById('alertIconBg');
+            const icon = document.getElementById('alertIcon');
+            
+            document.getElementById('alertTitle').innerText = title;
+            document.getElementById('alertDesc').innerText = message;
+            
+            // เปลี่ยนสไตล์ตามประเภท Error / Success
+            if (isError) {
+                alertBox.className = 'fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 bg-white border-l-4 border-red-500 p-4 rounded shadow-xl flex items-center gap-3 z-50';
+                iconBg.className = 'rounded-full bg-red-100 p-2';
+                icon.className = 'fa-solid fa-xmark text-red-600';
+            } else {
+                alertBox.className = 'fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 bg-white border-l-4 border-emerald-500 p-4 rounded shadow-xl flex items-center gap-3 z-50';
+                iconBg.className = 'rounded-full bg-emerald-100 p-2';
+                icon.className = 'fa-solid fa-check text-emerald-600';
+            }
+
+            alertBox.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                alertBox.classList.add('translate-y-20', 'opacity-0');
+            }, 4000);
+        }
+
+        function toggleModal(modalID) {
+            const modal = document.getElementById(modalID);
+            const content = document.getElementById(modalID + 'Content');
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    content.classList.remove('scale-95');
+                }, 10);
+            } else {
+                modal.classList.add('opacity-0');
+                content.classList.add('scale-95');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }, 300);
+            }
+        }
+
+        function copyCode() {
+            const code = document.getElementById('gasCode').innerText;
+            
+            // สร้าง Textarea ชั่วคราวขึ้นมาเพื่อคัดลอก (ใช้ document.execCommand แทน navigator.clipboard เพื่อป้องกันการถูกบล็อกใน iFrame)
+            const textArea = document.createElement("textarea");
+            textArea.value = code;
+            
+            // ซ่อน textarea ไม่ให้มองเห็นบนหน้าเว็บ
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            document.body.appendChild(textArea);
+            
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showNotification('คัดลอกสำเร็จ!', 'นำโค้ดไปวางใน Apps Script ได้เลย');
+            } catch (err) {
+                showNotification('เกิดข้อผิดพลาด', 'ไม่สามารถคัดลอกข้อความได้ โปรดคัดลอกด้วยตนเอง', true);
+            }
+            
+            // ลบ textarea ทิ้งเมื่อใช้งานเสร็จ
+            document.body.removeChild(textArea);
+        }
+
+        // --- 6. ระบบสลับหน้าเว็บ (Tab Switching) และ Dashboard ---
+        function switchTab(tab) {
+            const formView = document.getElementById('view-form');
+            const dashView = document.getElementById('view-dashboard');
+            const tabFormBtn = document.getElementById('tab-form');
+            const tabDashBtn = document.getElementById('tab-dashboard');
+
+            if (tab === 'form') {
+                formView.classList.remove('hidden');
+                dashView.classList.add('hidden');
+                
+                tabFormBtn.className = 'bg-primary text-white px-6 py-2 rounded-lg font-semibold shadow transition-all';
+                tabDashBtn.className = 'bg-white text-gray-600 px-6 py-2 rounded-lg font-semibold shadow hover:bg-gray-50 transition-all';
+            } else {
+                formView.classList.add('hidden');
+                dashView.classList.remove('hidden');
+                
+                tabFormBtn.className = 'bg-white text-gray-600 px-6 py-2 rounded-lg font-semibold shadow hover:bg-gray-50 transition-all';
+                tabDashBtn.className = 'bg-primary text-white px-6 py-2 rounded-lg font-semibold shadow transition-all';
+                
+                loadDashboardData();
+            }
+        }
+
+        async function loadDashboardData() {
+            if (!GAS_URL) {
+                showNotification('ไม่สามารถโหลดข้อมูลได้', 'โปรดใส่ URL ของ Apps Script ก่อน', true);
+                return;
+            }
+
+            const loader = document.getElementById('dashboard-loader');
+            const table = document.getElementById('dashboard-table');
+            const tbody = document.getElementById('dashboard-tbody');
+            const emptyState = document.getElementById('dashboard-empty');
+            
+            // รีเซ็ต UI เป็นสถานะกำลังโหลด
+            loader.classList.remove('hidden');
+            table.classList.add('hidden');
+            emptyState.classList.add('hidden');
+
+            try {
+                // ดึงข้อมูลผ่าน GET request
+                // หมายเหตุ: กรณีดึงข้อมูล ห้ามใช้ mode: 'no-cors' เพื่อให้สามารถอ่านบอดี้แบบ JSON ได้
+                const response = await fetch(GAS_URL);
+                const result = await response.json();
+
+                if (result.status === 'success' && result.data.length > 0) {
+                    const data = result.data;
+                    
+                    // ตัวแปรเก็บยอดสรุป
+                    let totalBudget = 0;
+                    let totalDays = 0;
+                    
+                    tbody.innerHTML = ''; // เคลียร์เนื้อหาตารางเดิม
+                    
+                    // เรียงข้อมูลจากใหม่ไปเก่า (อิงจากแถวล่าสุด)
+                    const reversedData = [...data].reverse();
+
+                    reversedData.forEach(trip => {
+                        // บวกยอด
+                        totalBudget += Number(trip.budget) || 0;
+                        totalDays += Number(trip.duration) || 0;
+
+                        // แปลงฟอร์แมตวันที่
+                        let dateStr = '-';
+                        if(trip.startDate) {
+                             dateStr = new Date(trip.startDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+                        }
+                        
+                        // แทรกแถวตาราง
+                        const tr = document.createElement('tr');
+                        tr.className = 'border-b border-gray-100 hover:bg-gray-50 transition-colors';
+                        tr.innerHTML = `
+                            <td class="py-4 font-medium text-gray-800 whitespace-nowrap">${trip.destination || '-'}</td>
+                            <td class="py-4 whitespace-nowrap">${dateStr}</td>
+                            <td class="py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                                    ${trip.tripTypes || 'ทั่วไป'}
+                                </span>
+                            </td>
+                            <td class="py-4 text-center">${trip.travelers ? trip.travelers + ' คน' : '-'}</td>
+                            <td class="py-4 text-right font-medium text-gray-800">${trip.budget ? Number(trip.budget).toLocaleString() + ' ฿' : '-'}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+
+                    // อัปเดตตัวเลขหน้าการ์ด
+                    document.getElementById('dash-total-trips').innerText = data.length.toLocaleString();
+                    document.getElementById('dash-total-budget').innerText = totalBudget.toLocaleString() + ' ฿';
+                    document.getElementById('dash-total-days').innerText = totalDays.toLocaleString();
+
+                    loader.classList.add('hidden');
+                    table.classList.remove('hidden');
+                } else {
+                    // กรณีระบบปกติแต่ยังไม่มีแถวข้อมูล
+                    document.getElementById('dash-total-trips').innerText = '0';
+                    document.getElementById('dash-total-budget').innerText = '0 ฿';
+                    document.getElementById('dash-total-days').innerText = '0';
+                    
+                    loader.classList.add('hidden');
+                    emptyState.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                loader.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-4xl mb-3 text-red-300"></i><p class="text-red-500">เกิดข้อผิดพลาดในการโหลดข้อมูล<br><span class="text-xs text-gray-400">โปรดตรวจสอบว่าได้อัปเดตโค้ด Apps Script และ Deploy เป็นเวอร์ชันใหม่ (New Version) แล้ว</span></p>`;
+            }
+        }
+    </script>
+</body>
+</html>
