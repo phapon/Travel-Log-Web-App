@@ -63,8 +63,18 @@
         </button>
     </div>
 
+    <!-- Navigation Tabs -->
+    <div class="w-full max-w-3xl flex gap-4 mb-6">
+        <button onclick="switchTab('form')" id="tab-form" class="bg-primary text-white px-6 py-2 rounded-lg font-semibold shadow transition-all">
+            <i class="fa-solid fa-pen-to-square mr-2"></i> บันทึกทริป
+        </button>
+        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="bg-white text-gray-600 px-6 py-2 rounded-lg font-semibold shadow hover:bg-gray-50 transition-all">
+            <i class="fa-solid fa-chart-pie mr-2"></i> แดชบอร์ด
+        </button>
+    </div>
+
     <!-- Main Form Container -->
-    <div class="w-full max-w-3xl bg-white rounded-2xl shadow-xl overflow-hidden">
+    <div id="view-form" class="w-full max-w-3xl bg-white rounded-2xl shadow-xl overflow-hidden transition-all">
         <div class="bg-emerald-50 border-b border-emerald-100 p-6">
             <h2 class="text-xl font-semibold text-emerald-800">กรอกข้อมูลทริปใหม่</h2>
         </div>
@@ -197,6 +207,74 @@
         </form>
     </div>
 
+    <!-- Dashboard Container -->
+    <div id="view-dashboard" class="hidden w-full max-w-4xl space-y-6">
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-emerald-500 flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">จำนวนทริปทั้งหมด</p>
+                    <h3 id="dash-total-trips" class="text-3xl font-bold text-gray-800 mt-1">-</h3>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-xl">
+                    <i class="fa-solid fa-suitcase-rolling"></i>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-blue-500 flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">งบประมาณรวม</p>
+                    <h3 id="dash-total-budget" class="text-3xl font-bold text-gray-800 mt-1">-</h3>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xl">
+                    <i class="fa-solid fa-baht-sign"></i>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-orange-500 flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">เดินทางรวม (วัน)</p>
+                    <h3 id="dash-total-days" class="text-3xl font-bold text-gray-800 mt-1">-</h3>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 text-xl">
+                    <i class="fa-solid fa-calendar-check"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Trips Table -->
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div class="bg-gray-50 border-b border-gray-200 p-6 flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-800">ประวัติการเดินทางล่าสุด</h2>
+                <button onclick="loadDashboardData()" class="text-sm text-primary hover:text-emerald-700 flex items-center gap-1 transition-colors">
+                    <i class="fa-solid fa-rotate-right"></i> รีเฟรชข้อมูล
+                </button>
+            </div>
+            <div class="p-6 overflow-x-auto">
+                <div id="dashboard-loader" class="flex flex-col items-center justify-center py-10 text-gray-500">
+                    <span class="loader border-t-primary w-8 h-8 mb-4"></span>
+                    <p>กำลังโหลดข้อมูล...</p>
+                </div>
+                <table id="dashboard-table" class="w-full hidden text-left border-collapse min-w-[600px]">
+                    <thead>
+                        <tr class="text-sm text-gray-500 border-b-2 border-gray-200">
+                            <th class="pb-3 font-medium">จุดหมาย</th>
+                            <th class="pb-3 font-medium">วันที่เดินทาง</th>
+                            <th class="pb-3 font-medium">ประเภท</th>
+                            <th class="pb-3 font-medium text-center">จำนวนคน</th>
+                            <th class="pb-3 font-medium text-right">งบประมาณ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dashboard-tbody" class="text-sm text-gray-700">
+                        <!-- Data rows will be injected here -->
+                    </tbody>
+                </table>
+                <div id="dashboard-empty" class="hidden text-center py-10 text-gray-500">
+                    <i class="fa-solid fa-folder-open text-4xl mb-3 text-gray-300"></i>
+                    <p>ยังไม่มีข้อมูลทริป หรือกำลังตั้งค่าระบบ</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Alert Message (Hidden by default) -->
     <div id="alertMsg" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 bg-white border-l-4 border-emerald-500 p-4 rounded shadow-xl flex items-center gap-3 z-50">
         <div id="alertIconBg" class="rounded-full bg-emerald-100 p-2">
@@ -217,20 +295,25 @@
             </div>
             <div class="p-6 overflow-y-auto">
                 <div class="space-y-6 text-sm text-gray-700">
-                    <p>Web App นี้เชื่อมต่อกับ URL ของคุณแล้ว! หากคุณยังไม่ได้ตั้งค่าฝั่ง Google Sheets สามารถนำโค้ดด้านล่างนี้ไปใส่ใน <strong>Extensions > Apps Script</strong> ได้เลย (ผมได้ใส่ Folder ID ของคุณให้แล้ว):</p>
+                    <p class="text-red-600 font-medium">⚠️ โปรดแก้ไข Sheet ID ในโค้ดด้านล่างให้ตรงกับไฟล์ Google Sheets ของคุณก่อนนำไปใช้งาน!</p>
+                    <p>คัดลอกโค้ดนี้ไปวางใน <strong>Extensions > Apps Script</strong> ของคุณ จากนั้นอย่าลืมกด <strong>Deploy > New version</strong> เพื่ออัปเดตการตั้งค่า:</p>
 
                     <div>
                         <div class="relative">
                             <button onclick="copyCode()" class="absolute top-2 right-2 bg-gray-700 hover:bg-gray-800 text-white text-xs px-3 py-1 rounded shadow"><i class="fa-regular fa-copy"></i> Copy</button>
                             <pre class="bg-gray-800 text-gray-100 p-4 rounded-xl overflow-x-auto text-xs leading-relaxed" id="gasCode">
+// ใส่ ID ของ Google Sheets ลงในช่องนี้
+// วิธีหา ID: ดูจาก URL ของ Sheet (https://docs.google.com/spreadsheets/d/ใส่_ไอดี_ตรงนี้/edit)
+var SHEET_ID = 'ใส่_ID_ของ_Google_Sheet_ตรงนี้'; 
+var FOLDER_ID = '1Z6cwnF4iYRs2QX6RGI_Ea6qPhSyBV7w4'; // Folder Drive ของคุณ
+
 function doPost(e) {
   try {
     var data = JSON.parse(e.postData.contents);
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     
-    // Folder ID ของคุณที่ดึงมาจากลิงก์
-    var folderId = '1Z6cwnF4iYRs2QX6RGI_Ea6qPhSyBV7w4'; 
-    var folder = DriveApp.getFolderById(folderId);
+    // ดึงไฟล์ Sheet ด้วย ID ป้องกันปัญหา getActiveSpreadsheet() หาไฟล์ไม่เจอ
+    var sheet = SpreadsheetApp.openById(SHEET_ID).getSheets()[0];
+    var folder = DriveApp.getFolderById(FOLDER_ID);
     
     var imageUrls = [];
     
@@ -244,8 +327,14 @@ function doPost(e) {
            var base64Data = dataPattern[2];
            var blob = Utilities.newBlob(Utilities.base64Decode(base64Data), mimeType, img.filename);
            var file = folder.createFile(blob);
-           // ตั้งค่าให้รูปภาพสามารถดูได้ทุกคนที่มีลิงก์ (อุปกรณ์เสริม)
-           file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+           
+           // แก้ไข: ใส่ try-catch ป้องกันระบบแชร์ล่มหาก Drive จำกัดสิทธิ์
+           try {
+             file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+           } catch(shareErr) {
+             // ปล่อยผ่านหากแชร์ไม่ได้ (แนะนำให้ตั้งค่าแชร์ที่ตัว Folder หลักแทน)
+           }
+           
            imageUrls.push(file.getUrl());
         }
       }
@@ -261,20 +350,60 @@ function doPost(e) {
       data.duration,
       data.travelers,
       data.budget,
-      imageUrls.join(", \n"), // คั่น URL รูปภาพด้วยลูกน้ำและขึ้นบรรทัดใหม่
+      imageUrls.join(", \n"), 
       data.notes
     ]);
     
-    // ส่งสถานะกลับไปบอก Web App ว่าสำเร็จ
     return ContentService.createTextOutput(JSON.stringify({
       "status": "success", 
-      "message": "Data and " + imageUrls.length + " images saved."
+      "message": "Data saved successfully."
     })).setMimeType(ContentService.MimeType.JSON);
     
   } catch (error) {
-    // กรณี Error
     return ContentService.createTextOutput(JSON.stringify({
       "status": "error", 
+      "message": error.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// -------------------------------------------------------------
+// เพิ่มฟังก์ชัน doGet เพื่อดึงข้อมูลมาแสดงในหน้า Dashboard
+// -------------------------------------------------------------
+function doGet(e) {
+  try {
+    var sheet = SpreadsheetApp.openById(SHEET_ID).getSheets()[0];
+    var data = sheet.getDataRange().getValues();
+    var result = [];
+    
+    var startIndex = (data.length > 0 && isNaN(new Date(data[0][0]).getTime())) ? 1 : 0;
+
+    for (var i = startIndex; i < data.length; i++) {
+      var row = data[i];
+      if (row[1] == "") continue; // ข้ามแถวว่าง
+      
+      result.push({
+        timestamp: row[0],
+        destination: row[1],
+        tripTypes: row[2],
+        startDate: row[3],
+        endDate: row[4],
+        duration: row[5],
+        travelers: row[6],
+        budget: row[7],
+        images: row[8],
+        notes: row[9]
+      });
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({
+      "status": "success",
+      "data": result
+    })).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      "status": "error",
       "message": error.toString()
     })).setMimeType(ContentService.MimeType.JSON);
   }
@@ -357,14 +486,32 @@ function doPost(e) {
             selectedFiles = selectedFiles.filter(f => f.name !== fileName);
         }
 
-        // แปลงไฟล์เป็น Base64 สำหรับส่งไป GAS
-        const getBase64 = (file) => new Promise((resolve, reject) => {
+        // แปลงและลดขนาดไฟล์ (Compress) เป็น Base64 สำหรับส่งไป GAS เพื่อลดขนาดข้อมูล ป้องกัน Error
+        const compressImage = (file, maxWidth = 1024, maxHeight = 1024, quality = 0.7) => new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
-            reader.onload = () => resolve({
-                filename: file.name,
-                base64: reader.result // ข้อมูลรูปภาพที่แปลงเป็นข้อความ
-            });
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height) {
+                        if (width > maxWidth) { height = Math.round((height * maxWidth) / width); width = maxWidth; }
+                    } else {
+                        if (height > maxHeight) { width = Math.round((width * maxHeight) / height); height = maxHeight; }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve({
+                        filename: file.name.replace(/\.[^/.]+$/, "") + ".jpg", // เปลี่ยนเป็น jpg เพื่อลดขนาด
+                        base64: canvas.toDataURL('image/jpeg', quality)
+                    });
+                };
+                img.onerror = error => reject(error);
+            };
             reader.onerror = error => reject(error);
         });
 
@@ -388,10 +535,10 @@ function doPost(e) {
                     tripTypes.push(cb.value);
                 });
 
-                // รวบรวมรูปภาพและแปลงเป็น Base64
+                // รวบรวมรูปภาพและลดขนาดเป็น Base64
                 const imagesBase64 = [];
                 for (let file of selectedFiles) {
-                    const b64 = await getBase64(file);
+                    const b64 = await compressImage(file);
                     imagesBase64.push(b64);
                 }
 
@@ -505,6 +652,119 @@ function doPost(e) {
             
             // ลบ textarea ทิ้งเมื่อใช้งานเสร็จ
             document.body.removeChild(textArea);
+        }
+
+        // --- 6. ระบบสลับหน้าเว็บ (Tab Switching) และ Dashboard ---
+        function switchTab(tab) {
+            const formView = document.getElementById('view-form');
+            const dashView = document.getElementById('view-dashboard');
+            const tabFormBtn = document.getElementById('tab-form');
+            const tabDashBtn = document.getElementById('tab-dashboard');
+
+            if (tab === 'form') {
+                formView.classList.remove('hidden');
+                dashView.classList.add('hidden');
+                
+                tabFormBtn.className = 'bg-primary text-white px-6 py-2 rounded-lg font-semibold shadow transition-all';
+                tabDashBtn.className = 'bg-white text-gray-600 px-6 py-2 rounded-lg font-semibold shadow hover:bg-gray-50 transition-all';
+            } else {
+                formView.classList.add('hidden');
+                dashView.classList.remove('hidden');
+                
+                tabFormBtn.className = 'bg-white text-gray-600 px-6 py-2 rounded-lg font-semibold shadow hover:bg-gray-50 transition-all';
+                tabDashBtn.className = 'bg-primary text-white px-6 py-2 rounded-lg font-semibold shadow transition-all';
+                
+                loadDashboardData();
+            }
+        }
+
+        async function loadDashboardData() {
+            if (!GAS_URL) {
+                showNotification('ไม่สามารถโหลดข้อมูลได้', 'โปรดใส่ URL ของ Apps Script ก่อน', true);
+                return;
+            }
+
+            const loader = document.getElementById('dashboard-loader');
+            const table = document.getElementById('dashboard-table');
+            const tbody = document.getElementById('dashboard-tbody');
+            const emptyState = document.getElementById('dashboard-empty');
+            
+            // รีเซ็ต UI เป็นสถานะกำลังโหลด
+            loader.classList.remove('hidden');
+            table.classList.add('hidden');
+            emptyState.classList.add('hidden');
+
+            try {
+                // ดึงข้อมูลผ่าน GET request
+                // หมายเหตุ: กรณีดึงข้อมูล ห้ามใช้ mode: 'no-cors' เพื่อให้สามารถอ่านบอดี้แบบ JSON ได้
+                const response = await fetch(GAS_URL);
+                const result = await response.json();
+
+                if (result.status === 'success' && result.data.length > 0) {
+                    const data = result.data;
+                    
+                    // ตัวแปรเก็บยอดสรุป
+                    let totalBudget = 0;
+                    let totalDays = 0;
+                    
+                    tbody.innerHTML = ''; // เคลียร์เนื้อหาตารางเดิม
+                    
+                    // เรียงข้อมูลจากใหม่ไปเก่า (อิงจากแถวล่าสุด)
+                    const reversedData = [...data].reverse();
+
+                    reversedData.forEach(trip => {
+                        // บวกยอด
+                        totalBudget += Number(trip.budget) || 0;
+                        totalDays += Number(trip.duration) || 0;
+
+                        // แปลงฟอร์แมตวันที่
+                        let dateStr = '-';
+                        if(trip.startDate) {
+                             dateStr = new Date(trip.startDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+                        }
+                        
+                        // มีรูปภาพหรือไม่
+                        const hasImage = trip.images && trip.images.trim() !== '' ? '<i class="fa-solid fa-image text-emerald-500 mr-2" title="มีรูปภาพ"></i>' : '';
+                        
+                        // แทรกแถวตาราง
+                        const tr = document.createElement('tr');
+                        tr.className = 'border-b border-gray-100 hover:bg-gray-50 transition-colors';
+                        tr.innerHTML = `
+                            <td class="py-4 font-medium text-gray-800 whitespace-nowrap">${hasImage}${trip.destination || '-'}</td>
+                            <td class="py-4 whitespace-nowrap">${dateStr}</td>
+                            <td class="py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                                    ${trip.tripTypes || 'ทั่วไป'}
+                                </span>
+                            </td>
+                            <td class="py-4 text-center">${trip.travelers ? trip.travelers + ' คน' : '-'}</td>
+                            <td class="py-4 text-right font-medium text-gray-800">${trip.budget ? Number(trip.budget).toLocaleString() + ' ฿' : '-'}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+
+                    // อัปเดตตัวเลขหน้าการ์ด
+                    document.getElementById('dash-total-trips').innerText = data.length.toLocaleString();
+                    document.getElementById('dash-total-budget').innerText = totalBudget.toLocaleString() + ' ฿';
+                    document.getElementById('dash-total-days').innerText = totalDays.toLocaleString();
+
+                    loader.classList.add('hidden');
+                    table.classList.remove('hidden');
+                } else {
+                    // กรณีระบบปกติแต่ยังไม่มีแถวข้อมูล
+                    document.getElementById('dash-total-trips').innerText = '0';
+                    document.getElementById('dash-total-budget').innerText = '0 ฿';
+                    document.getElementById('dash-total-days').innerText = '0';
+                    
+                    loader.classList.add('hidden');
+                    emptyState.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                loader.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-4xl mb-3 text-red-300"></i><p class="text-red-500">เกิดข้อผิดพลาดในการโหลดข้อมูล<br><span class="text-xs text-gray-400">โปรดตรวจสอบว่าได้อัปเดตโค้ด Apps Script และ Deploy เป็นเวอร์ชันใหม่ (New Version) แล้ว</span></p>`;
+            }
         }
     </script>
 </body>
